@@ -1,9 +1,11 @@
 import java.util.ArrayList;
 import java.math.*;
+import java.awt.Color;
 ArrayList<TestFruit> testSet;
 ArrayList<Fruit> trainingSet;
 Table dataset;
 int rowCount;
+int[] colors;
 /*
   Used for k-nearest-neighbors algorithm.
   With k = 1, a fruit is classified as the same thing as the fruit that is closest to it.
@@ -55,7 +57,11 @@ void setup(){
   print("Correct:\t" + correct + "\n");
   print("Wrong:\t" + wrong + "\n");
   
-  
+  colors = new int[5];
+  colors[0] = #000000;
+  colors[1] = #00FFFF;
+  colors[2] = #FF00FF;
+  colors[3] = #FFFF00;
   size(700, 700);
   
 }
@@ -119,20 +125,17 @@ void classify(TestFruit fruit, int k){
             	For j == 0, initialize the value of newMaxDistance to the distance to the current fruit.
             	For j > 0, set it to the max of the running max distance and the distance to the current fruit.
             */
-            if(j == 0){
+           if(j == 0){
             	newMaxDistance = distance(closestFruit[j], fruit);
-            }else{
+           }else{
             	newMaxDistance = max(newMaxDistance, distance(closestFruit[j], fruit));
-            }
-           
+           }
            if(distance(fruit, closestFruit[j]) == maxDistance){
                //We've found the farthest fruit. Replace it with the current fruit.
              closestFruit[j] = trainingSet.get(i);
-             maxDistance = distance;
            }
-         
-     	  }
-       
+     	 }
+     		maxDistance = newMaxDistance;
    		}
      
      }
@@ -183,18 +186,21 @@ void classify(TestFruit fruit, int k){
 	}
 
 	fruit.guessedFruitID = maxPair.x;
-
-
 }
 
 
 
 void draw(){
-  
   //Draw a circle centered at (height, weight) for each fruit in the training set
   for(int i = 0; i < trainingSet.size(); i++){
-    ellipse(trainingSet.get(i).height*50, trainingSet.get(i).weight*50, 5, 5);
+    fill(colors[trainingSet.get(i).fruitID - 1]);
+    ellipse(trainingSet.get(i).height*50, trainingSet.get(i).weight*50, 10, 10);
  
   }
 
+
+  for(int i = 0; i < testSet.size(); i++){
+    fill(colors[testSet.get(i).guessedFruitID - 1]);
+    rect(testSet.get(i).height*50, testSet.get(i).weight*50, 20, 20); 
+  }
 }
