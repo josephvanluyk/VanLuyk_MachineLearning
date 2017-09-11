@@ -1,7 +1,7 @@
 class Pair{
-    int x;
-    int y;
-	Pair(int x, int y){
+    float x;
+    float y;
+	Pair(float x, float y){
 		this.x = x;
 		this.y = y;
 	}

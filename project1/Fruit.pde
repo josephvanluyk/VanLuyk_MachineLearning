@@ -1,10 +1,10 @@
 class Fruit{
 	public int fruitID;
 	public float height;
-	public float weight;
-	Fruit(int fruitID, float height, float weight){
+	public float width;
+	Fruit(int fruitID, float height, float width){
 		this.fruitID = fruitID;
 		this.height = height;
-		this.weight = weight;
+		this.width = width;
 	}
 }

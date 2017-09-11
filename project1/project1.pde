@@ -18,17 +18,17 @@ void setup(){
   rowCount = dataset.getRowCount();
   int fruitID;
   float height;
-  float weight;
+  float width;
   for(int i = 1; i < rowCount; i++){
     fruitID = dataset.getInt(i, 0);
-    height = dataset.getFloat(i, 4);
-    weight = dataset.getFloat(i, 5);
+    height = dataset.getFloat(i, 5);
+    width = dataset.getFloat(i, 4);
     
     //Every fourth fruit is in the testing set. All others are in the training set
     if(i % 4 == 0){
-      testSet.add(new TestFruit(fruitID, height, weight));
+      testSet.add(new TestFruit(fruitID, height, width));
     }else{
-      trainingSet.add(new Fruit(fruitID, height, weight));
+      trainingSet.add(new Fruit(fruitID, height, width));
     }
   
   
@@ -58,7 +58,7 @@ void setup(){
   print("Wrong:\t" + wrong + "\n");
   
   colors = new int[5];
-  colors[0] = #000000;
+  colors[0] = #00FF00;
   colors[1] = #00FFFF;
   colors[2] = #FF00FF;
   colors[3] = #FFFF00;
@@ -74,7 +74,7 @@ float distance(Fruit fruitOne, Fruit fruitTwo){
   float dHeight;
   float dWeight;
   dHeight = fruitOne.height - fruitTwo.height;
-  dWeight = fruitOne.weight - fruitTwo.weight;
+  dWeight = fruitOne.width - fruitTwo.width;
   
   return (float)Math.sqrt(dHeight*dHeight + dWeight*dWeight);
 }
@@ -189,18 +189,26 @@ void classify(TestFruit fruit, int k){
 }
 
 
+Pair ChangeCoordinates(Pair in){
+	Pair out = new Pair(0, 0);
+	out.x = (in.x - .5)*50;
+	
+}
+
 
 void draw(){
-  //Draw a circle centered at (height, weight) for each fruit in the training set
+  //Draw a circle centered at (height, width) for each fruit in the training set
+  
+  Pair loc = null;
   for(int i = 0; i < trainingSet.size(); i++){
     fill(colors[trainingSet.get(i).fruitID - 1]);
-    ellipse(trainingSet.get(i).height*50, trainingSet.get(i).weight*50, 10, 10);
+    ellipse(trainingSet.get(i).width*50, trainingSet.get(i).height*50, 10, 10);
  
   }
 
-
+	//Draw test data as a square to visually distinguish them
   for(int i = 0; i < testSet.size(); i++){
     fill(colors[testSet.get(i).guessedFruitID - 1]);
-    rect(testSet.get(i).height*50, testSet.get(i).weight*50, 20, 20); 
+    rect(testSet.get(i).width*50, testSet.get(i).height*50, 5, 5); 
   }
 }
