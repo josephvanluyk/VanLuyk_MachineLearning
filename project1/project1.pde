@@ -56,7 +56,8 @@ void setup(){
   
   print("Correct:\t" + correct + "\n");
   print("Wrong:\t" + wrong + "\n");
-  
+  String accuracy = nf(100.0*correct/(correct + wrong), 2, 2);
+  print("Accuracy:\t" + accuracy + "%\n");
   colors = new int[5];
   colors[0] = #00FF00;
   colors[1] = #00FFFF;
@@ -185,30 +186,52 @@ void classify(TestFruit fruit, int k){
 		}
 	}
 
-	fruit.guessedFruitID = maxPair.x;
+	fruit.guessedFruitID = (int)maxPair.x;
 }
 
-
-Pair ChangeCoordinates(Pair in){
-	Pair out = new Pair(0, 0);
-	out.x = (in.x - .5)*50;
-	
-}
 
 
 void draw(){
   //Draw a circle centered at (height, width) for each fruit in the training set
-  
-  Pair loc = null;
+  float[] coords;
   for(int i = 0; i < trainingSet.size(); i++){
     fill(colors[trainingSet.get(i).fruitID - 1]);
-    ellipse(trainingSet.get(i).width*50, trainingSet.get(i).height*50, 10, 10);
+   	coords = ChangeOfCoordinates(trainingSet.get(i).width, trainingSet.get(i).height);
+    ellipse(coords[0], coords[1], 10, 10);
  
   }
 
-	//Draw test data as a square to visually distinguish them
+	//Draw test data as a square to visually distinguish from training data.
   for(int i = 0; i < testSet.size(); i++){
     fill(colors[testSet.get(i).guessedFruitID - 1]);
-    rect(testSet.get(i).width*50, testSet.get(i).height*50, 5, 5); 
+    coords = ChangeOfCoordinates(testSet.get(i).width, testSet.get(i).height);
+    rect(coords[0], coords[1], 10, 10);
   }
+}
+
+
+
+/*
+	Takes in the width and height of a fruit and returns a float array with the coordinates to draw it.
+	The x coordinate is located at index 0, and the y coordinate is located at index 1.
+	This is used so that the output takes up a larger portion of the screen and is more easily visible.
+*/
+float[] ChangeOfCoordinates(float x, float y){
+	float maxHeight = 11;
+	float minHeight = 3;
+	float maxWidth = 11;
+	float minWidth = 4;
+
+	/*
+		Adjusts coordinate system so that the edge of the windows represent maxHeight, minHeight, maxWidth, and minWidth.
+	*/
+	float xOut = (x - minWidth)*(700/(maxWidth-minWidth));
+	float yOut = (y - minHeight)*(700/(maxHeight-minHeight));
+	float[] out = new float[2];
+	out[0] = xOut;
+	out[1] = yOut;
+	return out;
+
+
+
 }
