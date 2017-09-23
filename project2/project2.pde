@@ -65,6 +65,60 @@ void setup(){
   colors[3] = #FFFF00;
   size(700, 700);
   
+  /*
+  evaluations_i contains a pair (x, y).
+  x contains the count of true positives for the fruit with fruitID of (i - 1).
+  y contains the false positives for the fruit with fruitID (i - 1);
+  */
+  Pair[] evaluations =  new Pair[4];
+  for(int i = 0; i < evaluations.length; i++){
+  	evaluations[i] = new Pair(0, 0);
+  }
+  
+  for(int i = 0; i < testSet.size(); i++){
+  	if(testSet.get(i).fruitID == testSet.get(i).guessedFruitID){
+  		evaluations[testSet.get(i).guessedFruitID - 1].x++;
+  	}else{
+  		evaluations[testSet.get(i).guessedFruitID - 1].y++;
+  	}
+  }
+  
+  float[] precisionScores = new float[4];
+  for(int i = 0; i < evaluations.length; i++){
+  	precisionScores[i] = ((float)evaluations[i].x/(evaluations[i].x + evaluations[i].y));
+  }
+  
+  float Average_macro;
+  float Average_micro;
+  float sum = 0;
+  for(int i = 0; i < precisionScores.length; i++){
+  	sum += precisionScores[i];
+  }
+  Average_macro = sum/precisionScores.length;
+  
+  int truePositives = 0;
+  int falsePositives = 0;
+  for(int i = 0; i < evaluations.length; i++){
+  	truePositives += evaluations[i].x;
+  	falsePositives += evaluations[i].y;
+  }
+  
+  Average_micro = ((float)truePositives/(truePositives + falsePositives));
+  
+  
+  /*
+  	Because the micro and macro average are so close, the k-nn algorithm has similar effectiveness for both the largest and smallest classes.
+  */
+  String out = nf(100*Average_micro, 2, 2);
+  print("Micro Average:\t" + out + "%\n");
+  out = nf(100*Average_macro, 2, 2);
+  print("Macro Average:\t" + out + "%\n");
+  
+  
+  
+  
+  
+  
 }
 
 
