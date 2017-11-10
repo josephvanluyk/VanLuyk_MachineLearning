@@ -1,0 +1,195 @@
+Less Hashing, Same Performance: Building a Better Bloom Filter 
+Adam Kirsch⋆ and Michael Mitzenmacher⋆⋆ 
+Division of Engineering and Applied Sciences Harvard University, Cambridge, MA 02138 {kirsch, michaelm}@eecs.harvard.edu 
+Abstract. A standard technique from the hashing literature is to use two hash functions h1(x) and h2(x) to simulate additional hash functions of the form gi(x) = h1(x) + ih2(x). We demonstrate that this technique can be usefully applied to Bloom filters and related data structures. Specifically, only two hash functions are necessary to effectively imple- ment a Bloom filter without any loss in the asymptotic false positive probability. This leads to less computation and potentially less need for randomness in practice. 
+1 Introduction 
+A Bloom filter is a simple space-efficient randomized data structure for repre- senting a set in order to support membership queries. Although Bloom filters allow false positives, the space savings often outweigh this drawback. The Bloom filter and its many variations have proven increasingly important for many ap- plications (see, for example, the survey [3]). Although potential alternatives have been proposed [15], the Bloom filter’s simplicity, ease of use, and excellent per- formance make it a standard data structure that is and will continue to be of great use in many applications. For space reasons, we do not review the standard Bloom filter results; for more background, see [3]. 
+In this paper, we show that applying a standard technique from the hash- ing literature can simplify the implementation of Bloom filters significantly. The idea is the following: two hash functions h1(x) and h2(x) can simulate more than two hash functions of the form gi(x) = h1(x) + ih2(x). (See, for example, Knuth’s discussion of open addressing with double hashing [11].) In our con- text i will range from 0 up to some number k − 1 to give k hash functions, and the hash values are taken modulo the size of the relevant hash table. We demonstrate that this technique can be usefully applied to Bloom filters and related data structures. Specifically, only two hash functions are necessary to ef- fectively implement a Bloom filter without any increase in the asymptotic false positive probability. This leads to less computation and potentially less need 
+⋆ Supported in part by an NSF Graduate Research Fellowship, NSF grants CCR- 9983832 and CCR-0121154, and a grant from Cisco Systems. 
+⋆⋆ Supported in part by NSF grants CCR-9983832 and CCR-0121154 and a grant from Cisco Systems. 
+Y. Azar and T. Erlebach (Eds.): ESA 2006, LNCS 4168, pp. 456–467, 2006. ⃝c Springer-Verlag Berlin Heidelberg 2006 
+page1image22752.png ¬ 
+Less Hashing, Same Performance: Building a Better Bloom Filter 457 
+for randomness in practice. Specifically, in query-intensive applications where computationally non-trivial hash functions are used (such as in [5, 6]), hashing can be a potential bottleneck in using Bloom filters, and reducing the number of required hashes can yield an effective speedup. This improvement was found empirically in the work of Dillinger and Manolios [5, 6], who suggested using the hash functions gi(x) = h1(x) + ih2(x) + i2 mod m, where m is the size of the hash table. 
+Here we provide a full theoretical analysis that holds for a wide class of vari- ations of this technique, justifies and gives insight into the previous empirical observations, and is interesting in its own right. In particular, our methodology generalizes the standard asymptotic analysis of a Bloom filter, exposing a new convergence result that provides a common unifying intuition for the asymptotic false positive probabilities of the standard Bloom filter and the generalized class of Bloom filter variants that we analyze in this paper. We obtain this result by a surprisingly simple approach; rather than attempt to directly analyze the asymp- totic false positive probability, we formulate the initialization of the Bloom filter as a balls-and-bins experiment, prove a convergence result for that experiment, and then obtain the asymptotic false positive probability as a corollary. 
+We start by analyzing a specific, somewhat idealized Bloom filter variation that provides the main insights and intuition for deeper results. We then move to a more general setting that covers several issues that might arise in practice, such as when the size of the hash table is a power of two as opposed to a prime. 
+Because of space limitations, we leave some results in the full version of this paper [10]. For example, rate of convergence results appear in the full version [10], although in Section 6 we provide some experimental results showing that the asymptotics kick in quickly enough for this technique to be effective in practice. Also, in the full version we demonstrate the utility of this approach beyond the simple Bloom filter by showing how it can be used to reduce the number of hash functions required for Count-Min sketches [4], a variation of the Bloom filter idea used for keeping approximate counts of frequent items in data streams. 
+Before beginning, we note that Luecker and Molodowitch [12] and Schmidt and Siegel [17] have shown that in the setting of open addressed hash tables, the double hashing technique gives the same performance as uniform hashing. These results are similar in spirit to ours, but the Bloom filter setting is suffi- ciently different from that of an open addressed hash table that we do not see a direct connection. We also note that our use of hash functions of the form gi(x) = h1(x) + ih2(x) may appear similar to the use of pairwise independent hash functions, and that one might wonder whether there is any formal con- nection between the two techniques in the Bloom filter setting. Unfortunately, this is not the case; a straightforward modification of the standard Bloom filter analysis yields that if pairwise independent hash functions are used instead of fully random hash functions, then the space required to retain the same bound on the false positive probability increases by a constant factor. In contrast, we show that using the gi’s causes no increase in the false positive probability, so they can truly be used as a replacement for fully random hash functions. 
+458 A. Kirsch and M. Mitzenmacher 
+2 A Simple Construction Using Two Hash Functions 
+As an instructive example case, we consider a specific application of the general technique described in the introduction. We devise a Bloom filter that uses k fully random hash functions on some universe U of items, each with range {0,1,2,...,p − 1} for a prime p. Our hash table consists of m = kp bits; each hash function is assigned a disjoint subarray of p bits in the filter, that we treat as numbered {0,1,2,...,p−1}. Our k hash functions will be of the form gi(x) = h1(x) + ih2(x) mod p, where h1(x) and h2(x) are two independent, uniform random hash functions on the universe with range {0, 1, 2, . . . , p − 1}, and throughout we assume that i ranges from 0 to k − 1. 
+As with a standard partitioned Bloom filter, we fix some set S ⊆ U and initialize the filter with S by first setting all of the bits to 0 and then, for each x ∈ S and i, setting the gi(x)-th bit of the i-th subarray to 1. For any y ∈ U, we answer a query of the form “Is y ∈ S?” with “Yes” if and only if the gi(y)-th bit of the i-th subarray is 1 for every i. Thus, an item z ̸∈ S generates a false positive if and only if each of its hash locations in the array is also a hash location for some x ∈ S. 
+The advantage of our simplified setting is that for any two elements x,y ∈ U, exactly one of the following three cases occurs: gi(x) ̸= gi(y) for all i, or gi(x) = gi(y) for exactly one i, or gi(x) = gi(y) for all i. That is, because we have partitioned the bit array into disjoint hash tables, each hash function can be considered separately. Moreover, by working modulo p, we have arranged that if gi(x) = gi(y) for at least two values of i, then we must have h1(x) = h1(y) and h2(x) = h2(y), so all hash values are the same. This codifies the intuition behind our result: the most likely way for a false positive to occur is when each element in the Bloom filter set S collides with at most one array bit corresponding to the element generating the false positive; other events that cause an element to generate a false positive occur with vanishing probability. It is this intuition that motivates our analysis; in Section 3, we consider more general cases where other non-trivial collisions can occur. 
+Proceeding formally, we fix a set S = {x1, x2, . . . , xn} of n elements from U and another element z ∈/ S, and compute the probability that z yields a false positive. A false positive corresponds to the event F that for each i there is (at least) one j such that gi(z) = gi(xj). Obviously, one way this can occur is if h1(xj) = h1(z) and h2(xj) = h2(z) for some j. The probability of this event E is 
+Pr(E) = 1− 1−1/p2 n = 1− 1−k2/m2 n . Notice that when m/n = c is a constant and k is a constant, as is standard for 
+a Bloom filter, we have Pr(E) = o(1). Now since Pr(F) = Pr(F | E) Pr(E) + Pr(F | ¬E) Pr(¬E) 
+= o(1) + Pr(F | ¬E)(1 − o(1)), 
+it suffices to consider Pr(F | ¬E) to obtain the (constant) asymptotic false positive probability. 
+Less Hashing, Same Performance: Building a Better Bloom Filter 459 
+Conditioned on ¬E and (h1(z),h2(z)), the pair (h1(xj),h2(xj)) is uniformly distributed over the p2 − 1 values in V = {0,...,p − 1}2 − {(h1(z),h2(z))}. Of these,foreachi∗ ∈{0,...,k−1},thep−1pairsin 
+Vi∗ ={(a,b)∈V : a≡i∗(h2(z)−b)+h1(z)modp, b̸≡h2(z)modp} 
+are the ones such that if (h1(xj ), h2(xj )) ∈ Vi∗ , then i∗ is the unique value of i such that gi(xj) = gi(z). We can therefore view the conditional probability as a variant of a balls-and-bins problem. There are n balls (each corresponding to some xj ∈ S), and k bins (each corresponding to some i∗ ∈ {0,...,k−1}). With probability k(p − 1)/(p2 − 1) = k/(p + 1) a ball lands in a bin, and with the remaining probability it is discarded; when a ball lands in a bin, the bin it lands in is chosen uniformly at random. What is the probability that all of the bins have at least one ball? 
+This question is surprisingly easy to answer. By the Poisson approximation, the total number of balls that are not discarded has distribution Bin(n, k/(p + 1)) ≈ Po(k2/c), where Bin(·, ·) and Po(·) denote the binomial and Poisson distri- butions, respectively. Since each ball that is not discarded lands in a bin chosen at random, the joint distribution of the number of balls in the bins is asymp- totically the same as the joint distribution of k independent Po(k/c) random variables, by a standard property of Poisson random variables. The probability that each bin has a least one ball now clearly converges to 
+Pr(Po(k/c) > 0)k = (1 − exp[−k/c])k , 
+which is the asymptotic false positive probability for a standard Bloom filter, completing the analysis. 
+We make the above argument much more general and rigorous in Section 3, but for now we emphasize that we have actually characterized much more than just the false positive probability of our Bloom filter variant. In fact, we have characterized the asymptotic joint distribution of the number of items in S hash- ing to the locations used by some z ̸∈ S as being independent Po(k/c) random variables. Furthermore, from a technical perspective, this approach appears fairly robust. In particular, the above analysis uses only the facts that the probability that some x ∈ S shares more than one of z’s hash locations is o(1), and that if some x ∈ S shares exactly one of z’s hash locations, then that hash loca- tion is nearly uniformly distributed over z’s hash locations. These observations suggest that the techniques used in this section can be generalized to handle a much wider class of Bloom filter variants, and form the intuitive basis for the arguments in Section 3. 
+3 A General Framework 
+In this section, we introduce a general framework for analyzing Bloom filter vari- ants, such as the one examined in Section 2. We start with some new notation. For any integer l, we define the set [l] = {0,1,...,l − 1} (note that this defini- tion is slightly non-standard). We denote the support of a random variable X 
+460 A. Kirsch and M. Mitzenmacher 
+by Supp(X). For a multi-set M, we use |M| to denote the number of distinct elements of M, and ∥M∥ to denote the number of elements of M with multi- plicity. For two multi-sets M and M′, we define M ∩ M′ and M ∪ M′ to be, respectively, the intersection and union of M′ as multi-sets. Furthermore, in an abuse of standard notation, we define the statement i, i ∈ M as meaning that i is an element of M of multiplicity at least 2. 
+We are now ready to define the framework. As before, U denotes the universe of items and S ⊆ U denotes the set of n items for which the Bloom filter will answer membership queries. We define a scheme to be a method of assigning hash locations to every element of U. Formally, a scheme is specified by a joint distribution of discrete random variables {H(u) : u ∈ U} (implicitly parameter- ized by n), where for u ∈ U, H(u) represents the multi-set of hash-locations assigned to u by the scheme. We do not require a scheme to be defined for every value of n, but we do insist that it be defined for infinitely many val- ues of n, so that we may take limits as n → ∞. For example, for the class of schemes discussed in Section 2, we think of the constants k and c as being 
+fixed to give a particular scheme that is defined for those values of n such that def def 
+p = m/k is a prime, where m = cn. Since there are infinitely many primes, the asymptotic behavior of this scheme as n → ∞ is well-defined and is the same as in Section 2, where we let m be a free parameter and analyzed the behav- ior as n,m → ∞ subject to m/n and k being fixed constants, and m/k being prime. 
+Having defined the notion of a scheme, we may now formalize some important concepts with new notation (all of which is implicitly parameterized by n). We define H to be the set of all hash locations that can be assigned by the scheme (formally, H is the set of elements that appear in some multi-set in the support of H(u), for some u ∈ U). For x ∈ S and z ∈ U−S, define C(x,z) = H(x)∩H(z) to be the multi-set of hash collisions of x with z. We let F(z) denote the false positive event for z ∈ U − S, which occurs when each of z’s hash locations is also a hash location for some x ∈ S. 
+In the schemes that we consider, {H(u) : u ∈ U} will always be independent and identically distributed. In this case, Pr(F(z)) is the same for all z ∈ U −S, as is the joint distribution of {C(x, z) : x ∈ S}. Thus, to simplify the notation, we may fix an arbitrary z ∈ U −S and simply use Pr(F) instead of Pr(F(z)) to denote the false positive probability, and we may use {C(x) : x ∈ S} instead of {C(x, z) : x ∈ S} to denote the joint probability distribution of the multi-sets of hash collisions of elements of S with z. 
+The main technical result of this section is the following key theorem, which is a formalization and generalization of the analysis in Section 2. 
+Theorem 1. Fix a scheme. Suppose that there are constants λ and k such that: 
+1. {H(u) : u ∈ U} are independent and identically distributed. 2. For u ∈ U, ∥H(u)∥ = k. 
+H(z), so the 
+
+i∈[k] tiXi(x)’s are too, since each is a function of the corresponding 
+Less Hashing, Same Performance: Building a Better Bloom Filter 461 
+⎧⎨ 1 − λ + o ( 1 / n ) i = 0 n 
+page6image4056.png ¬
+3. For x ∈ S, Pr(∥C(x)∥ = i) = λ + o(1/n) i = 1 . 
+page6image4056.png ¬
+⎩n 4. Forx∈S,maxi∈H Pr(i∈C(x)|∥C(x)∥=1, i∈H(z))−1 =o(1). 
+ Then limn→∞ Pr(F) = 1 − e−λ/k k . 
+o(1/n) i>1 k 
+page6image7640.png ¬
+Proof. For ease of exposition, we assign every element of H(z) a unique number in [k] (treating multiple instances of the same hash location as distinct elements). More formally, we define an arbitrary bijection fM from M to [k] for every multi- set M ⊆ H with ∥M∥ = k (where fM treats multiple instances of the same hash location in M as distinct elements), and label the elements of H(z) according to fH(z). This convention allows us to identify the elements of H(z) by numbers i ∈ [k], rather than hash locations i ∈ H. 
+def 
+converges in distribution to a vector P = (P0 , . . . , Pk−1 ) of k independent 
+Po(λ/k) random variables as n → ∞. To do this, we make use of moment 
+generating functions. For a random variable R, the moment generating func- 
+def 
+tion of R is defined by MR(t) = E[exp(tR)]. We show that for any t0,...,tk, 
+For i ∈ [k] and x ∈ S, define Xi(x) = 1 if i ∈ C(x) and 0 otherwise, and def 
+define Xi = x∈S Xi(x). Note that i ∈ C(x) is an abuse of notation; what we really mean is f−1 (i) ∈ C(x), although we will continue using the for- 
+H(z) mer since it is much less cumbersome. We show that X = (X0,...,Xk−1) 
+limn→∞ M k−1 ti Xi (tk ) = M k−1 i=0 i=0 
+and p. 390], since M k−1 (tk) i=0 ti Pi 
+ti Pi (tk ), which is sufficient by [1, Theorem 29.4 
+i∈[k] tiXi k i∈[k] ti 
+x∈S Xi(x) 
+k x∈S 
+= exp λ k 
+etkti −1 (t ) = M 
+< ∞, by an easy (t ) 
+= M  where the first two steps are obvious, and the third step follows from the fact that 
+tiXi(x)(tk) , the H(x)’s are independent and identically distributed (for x ∈ S) conditioned on 
+H(x). Continuing, we have (as n → ∞) n 
+M 
+tiXi(x)(tk) Pr(∥C(x)∥ = 0) + 
+i∈[k] 
+= 
+λ = 1−n+ 
+→e−λ+λ  k i∈[k] 
+Pr(∥C(x)∥ = j) 
+× 
+(T) | ∥C(x)∥ = j)etk 
+i∈T ti 
+H(z) n 
+T ⊆[k]:|T |=j λ i∈[k] etkti 
+k 
+j=1 Pr(C(x) = f−1 
+n 
+kn +o(1/n) 
+etkti =eλ( (etkti−1))=M k i∈[k] 
+i∈[k] 
+tiPoi(λk) 
+(t ). k 
+
+i∈[k] 
+n def 
+page6image41312.png ¬
+calculation. Proceeding, we write M (t ) = M 
+i∈[k] tiXi(x) k n 
+i∈k 
+page6image43416.png ¬ page6image43584.png ¬ page6image43752.png ¬ page6image43752.png ¬ 
+462 A. Kirsch and M. Mitzenmacher 
+The first step follows from the definition of the moment generating function. The second step follows from the assumptions on the distribution of C(x) (the conditioning on i ∈ H(z) is implicit in our convention that associates integers in [k] with the elements of H(z)). The next two steps are obvious, and the last step follows from a previous computation. 
+We have now established that Xn converges to P in distribution as n → ∞. Standard facts from probability theory [1] now imply that as n → ∞, 
+k Pr(F)=Pr(∀i∈[k],Xi >0)→Pr(∀i∈[k],Pi >0)= 1−e−λ/k . 
+⊓⊔ 
+It turns out that the conditions of Theorem 1 can be verified very easily in many cases. 
+Lemma 1. Fix a scheme. Suppose that there are constants λ and k such that: 
+1. {H(u) : u ∈ U} are independent and identically distributed. 
+4. For u ∈ U, maxi1,i2∈H Pr(i1,i2 ∈ H(u)) = o(1/n). 5. The set of all possible hash locations H satisfies |H| = O(n). 
+Then the conditions of Theorem 1 hold (with the same values for λ and k), and so the conclusion does as well. 
+Remark 1. Recall that, under our notation, the statement i,i ∈ H(u) is true if and only if i is an element of H(u) of multiplicity at least 2. 
+Proof. The proof is essentially just a number of applications of the first two Boole-Bonferroni inequalities. For details, see [10]. 
+4 Some Specific Schemes 
+We are now ready to analyze some specific schemes. In particular, we examine a natural generalization of the scheme described in Section 2, as well as the double hashing and extended double hashing schemes introduced in [5,6]. In both of these cases, we consider a Bloom filter consisting of an array of m = cn bits and k hash functions, where c > 0 and k ≥ 1 are fixed constants. The nature of the hash functions depends on the particular scheme under consideration. 
+4.1 Partition Schemes 
+First, we consider the class of partition schemes, where the Bloom filter is defined by an array of m bits that is partitioned into k disjoint arrays of m′ = m/k bits (we require that m be divisible by k), and an item u ∈ U is hashed to location 
+h1(u) + ih2(u) mod m′ 
+2. For u ∈ U, ∥H(u)∥ = k. 
+3. For u∈U, max Pr(i∈H(u))− λ =o(1/n). i∈H kn 
+page7image23168.png ¬ 
+Less Hashing, Same Performance: Building a Better Bloom Filter 463 
+of array i, for i ∈ [k], where h1 and h2 are independent fully random hash functions with codomain [m′]. Note that the scheme analyzed in Section 2 is a partition scheme where m′ is prime (and so is denoted by p in Section 2). 
+Unless otherwise stated, henceforth we do all arithmetic involving h1 and h2 modulo m′. We prove the following theorem concerning partition schemes. 
+Theorem 2. For a partition scheme, limn→∞ Pr(F) = 1 − e−k/c k . 
+Proof. We show that the H(u)’s satisfy the conditions of Lemma 1 with λ = k2/c. For i ∈ [k] and u ∈ U, define gi(u) = (i,h1(u) + ih2(u)) and H(u) = (gi(u) : i ∈ [k]). That is, gi(u) is u’s ith hash location, and H(u) is the multi-set of u’s hash locations. This notation is obviously consistent with the definitions required by Lemma 1. 
+Since h1 and h2 are independent and fully random, the first two conditions are trivial. The last condition is also trivial, since there are m = cn possible hash locations. For the remaining two conditions, fix u ∈ U. Observe that for (i, r) ∈ [k] × [m′], 
+Pr((i, r) ∈ H(u)) = Pr(h1(u) = r − ih2(u)) = 1/m′ = (k2/c)/kn, and that for distinct (i1, r1), (i2, r2) ∈ [k] × [m′], we have 
+Pr((i1, r1), (i2, r2) ∈ H(u)) = Pr(i1 ∈ H(u)) Pr(i2 ∈ H(u) | i1 ∈ H(u)) 
+= 1 Pr(h1(u) = r2 − i2h2(u) | h1(u) = r1 − i1h2(u)) m′ 
+= 1 Pr((i1−i2)h2(u)=r1−r2) m′ 
+≤ 1 ·gcd(|i2−i1|,m′)≤ k =o(1/n), m′ m′ (m′)2 
+where the fourth step is the only nontrivial step, and it follows from the standard fact that for any r, s ∈ [m], there are at most gcd(r, m) values t ∈ [m] such that rt ≡ s mod m (see, for example, [9, Proposition 3.3.1]). Finally, since it is clear that from the definition of the scheme that |H(u)| = k for all u ∈ U, we have thatforany(i,r)∈[k]×[m′],Pr((i,r),(i,r)∈H(u))=0. ⊔⊓ 
+4.2 (Extended) Double Hashing Schemes 
+Next, we consider the class of double hashing and extended double hashing schemes, which are analyzed empirically in [5,6]. In these schemes, an item u ∈ U is hashed to location 
+h1(u) + ih2(u) + f(i) mod m 
+of the array of m bits, for i ∈ [k], where h1 and h2 are independent fully random hash functions with codomain [m], and f : [k] → [m] is an arbitrary function. 
+page8image23264.png ¬ page8image23264.png ¬ page8image23264.png ¬ page8image23768.png ¬ page8image23936.png ¬ 
+464 A. Kirsch and M. Mitzenmacher 
+When f(i) ≡ 0, the scheme is called a double hashing scheme. Otherwise, it is called an extended double hashing scheme (with f). We show that the asymptotic false positive probability for an (extended) double hashing scheme is the same as for a standard Bloom filter. The proof is analogous to the proof of Theorem 2. For details, see the technical report version of this paper [10]. 
+Theorem 3. For any (extended) double hashing scheme, k 
+lim Pr(F)= 1−e−k/c . n→∞ 
+5 Multiple Queries 
+In the previous sections, we analyzed the behavior of Pr(F(z)) for some fixed z and moderately sized n. Unfortunately, this quantity is not directly of interest in most applications. Instead, one is usually concerned with certain character- istics of the distribution of the number of elements in a sequence (of distinct elements) z1, . . . , zl ∈ U − S for which F(z) occurs. In other words, rather than being interested in the probability that a particular false positive occurs, we are concerned with, for example, the fraction of distinct queries on elements of U − S posed to the filter for which it returns false positives. Since {F(z) : z ∈ U − S} are not independent, the behavior of Pr(F) alone does not directly imply results of this form. This section is devoted to overcoming this difficulty. 
+We start with a definition. 
+Definition 1. Consider any scheme where {H(u) : u∈U} are independent and identically distributed. Write S = {x1, . . . , xn}. The false positive rate is defined to be the random variable R = Pr(F | H(x1), . . . , H(xn)). 
+The false positive rate gets its name from the fact that, conditioned on R, the events {F(z) : z ∈ U − S} are independent with common probability R. Thus, the fraction of a large number of queries on elements of U − S posed to the filter for which it returns false positives is very likely to be close to R. In this sense, R, while a random variable, acts like a rate for {F(z) : z ∈ U − S}. 
+It is important to note that in much of literature concerning standard Bloom filters, the false positive rate is not defined as above. Instead the term is often used as a synonym for the false positive probability. Indeed, for a standard Bloom filter, the distinction between the two concepts as we have defined them is unimportant in practice, since one can easily show that R is very close to Pr(F) with extremely high probability (see, for example, [13]). It turns out that this result generalizes very naturally to the framework presented in this paper, and so the practical difference between the two concepts is largely unimportant even in our very general setting. However, the proof is more complicated than in the case of a standard Bloom filter, and so we must be careful to use the terms as we have defined them. 
+We give only an outline of our results here, deferring the details to [10]. First, we use a standard Doob martingale argument to apply the Azuma-Hoeffding 
+Less Hashing, Same Performance: Building a Better Bloom Filter 465 
+inequality to R, which tells us that R is concentrated around E[R] = Pr(F). We then use that result to prove versions of the strong law of large numbers, the weak law of large numbers, Hoeffding’s inequality, and the central limit theorem. 
+6 Experiments 
+In this section, we evaluate the theoretical results of the previous sections empiri- cally for small values of n. We are interested in the following specific schemes: the standard Bloom filter scheme, the partition scheme, the double hashing scheme, and the extended double hashing schemes where f(i) = i2 and f(i) = i3. 
+For c ∈ {4,8,12,16}, we do the following. First, compute the value of k ∈ {⌊c ln 2⌋, ⌈c ln 2⌉} that minimizes p = (1 − exp[−k/c])k . Next, for each of the schemes under consideration, repeat the following procedure 10,000 times: in- stantiate the filter with the specified values of n, c, and k, populate the filter with a set S of n items, and then query ⌈10/p⌉ elements not in S, recording the number Q of those queries for which the filter returns a false positive. We then approximate the false positive probability of the scheme by averaging the results over all 10, 000 trials. We use the standard Java pseudorandom number generator to simulate independent hash values. 
+0.148 0.1478 0.1476 0.1474 0.1472 
+0.147 0.1468 0.1466 0.1464 0.1462 
+0.02185 0.0218 0.02175 0.0217 0.02165 0.0216 0.02155 0.0215 0.02145 
+0.00056 0.00055 0.00054 0.00053 0.00052 0.00051 
+0.0005 0.00049 0.00048 0.00047 0.00046 0.00045 
+c = 4, k = 3 
+c = 8, k = 6 
+5 101520253035404550 n/1000 
+c = 16, k = 11 
+5 101520253035404550 n/1000 
+page10image22784.png ¬ page10image24384.png ¬ page10image26152.png ¬ page10image26312.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29784.png ¬ page10image30208.png ¬ page10image29464.png ¬ page10image26152.png ¬ page10image54304.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image26152.png ¬ page10image57608.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image59312.png ¬ page10image59472.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image60216.png ¬ page10image60640.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image57608.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image62504.png ¬ page10image59472.png ¬ page10image63088.png ¬ page10image59312.png ¬ page10image60640.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image67496.png ¬ page10image67920.png ¬ page10image67496.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image69408.png ¬ page10image70168.png ¬ page10image67496.png ¬ page10image59312.png ¬ page10image59312.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image59472.png ¬ page10image72400.png ¬ page10image72400.png ¬ page10image59472.png ¬ page10image57608.png ¬ page10image73568.png ¬ page10image59312.png ¬ page10image69408.png ¬ page10image67496.png ¬ page10image59472.png ¬ page10image76096.png ¬ page10image76256.png ¬ page10image70168.png ¬ page10image76840.png ¬ page10image77600.png ¬ page10image67496.png ¬ page10image77600.png ¬ page10image59312.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image67496.png ¬ page10image73568.png ¬ page10image80856.png ¬ page10image60640.png ¬ page10image81176.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image60216.png ¬ page10image59312.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image59312.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image83680.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image87152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬
+0.146 5 101520253035404550 
+page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬
+0.00326 0.00324 0.00322 
+0.0032 0.00318 0.00316 0.00314 0.00312 
+n/1000 c = 12, k = 8 
+5 101520253035404550 n/1000 
+page10image94488.png ¬ page10image117592.png ¬ page10image29464.png ¬ page10image26152.png ¬ page10image118072.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image119512.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image26152.png ¬ page10image121216.png ¬ page10image26152.png ¬ page10image26312.png ¬ page10image122128.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image119512.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image119512.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image57608.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image83680.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image57608.png ¬ page10image80856.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image67496.png ¬ page10image67496.png ¬ page10image67496.png ¬ page10image59312.png ¬ page10image67496.png ¬ page10image59312.png ¬ page10image149704.png ¬ page10image59312.png ¬ page10image59312.png ¬ page10image59312.png ¬ page10image151112.png ¬ page10image67496.png ¬ page10image59312.png ¬ page10image59312.png ¬ page10image59312.png ¬ page10image152440.png ¬ page10image152600.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image80856.png ¬ page10image67496.png ¬ page10image59312.png ¬ page10image152440.png ¬ page10image154568.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image26152.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image29464.png ¬ page10image161448.png ¬
+p Partition Ext. Double (Square) Standard Double Ext. Double (Cube) 
+page10image162952.png ¬ page10image163544.png ¬ page10image164136.png ¬ page10image164728.png ¬ page10image165656.png ¬
+Fig. 1. Estimates of the false positive probability for various schemes and parameters 
+The results are shown in Figure 1. In Figure 1, we see that for small values of c, the different schemes are essentially indistinguishable from each other, and simultaneously have a false positive probability/rate close to p. This result is 
+Estimated False Positive Probability 
+Estimated False Positive Probability 
+Estimated False Positive Probability 
+Estimated False Positive Probability 
+466 A. Kirsch and M. Mitzenmacher 
+particularly significant since the filters that we are experimenting with are fairly small, supporting our claim that these schemes are useful even in settings with very limited space. However, we also see that for the slightly larger values of c ∈ {12, 16}, the partition scheme is no longer particularly useful for small values of n, while the other schemes are. This result is not particularly surprising, since we know from [10, Section 6] that all of these schemes are unsuitable for small values of n and large values of c. Furthermore, we expect that the partition scheme is the least suited to these conditions, given the standard fact that the partitioned version of a standard Bloom filter never performs better than the original version. Nevertheless, the partition scheme might still be useful in certain settings, since it gives a substantial reduction in the range of the hash functions. 
+7 Conclusion 
+Bloom filters are simple randomized data structures that are extremely useful in practice. In fact, they are so useful that any significant reduction in the time required to perform a Bloom filter operation immediately translates to a substantial speedup for many practical applications. Unfortunately, Bloom filters are so simple that they do not leave much room for optimization. 
+This paper focuses on modifying Bloom filters to use less of the only re- source that they traditionally use liberally: (pseudo)randomness. Since the only nontrivial computations performed by a Bloom filter are the constructions and evaluations of pseudorandom hash functions, any reduction in the required num- ber of pseudorandom hash functions yields a nearly equivalent reduction in the time required to perform a Bloom filter operation (assuming, of course, that the Bloom filter is stored entirely in memory, so that random accesses can be performed very quickly). 
+We have shown that a Bloom filter can be implemented with only two pseu- dorandom hash functions without any increase in the asymptotic false positive probability. We have also shown that the asymptotic false positive probability acts, for all practical purposes and reasonable settings of a Bloom filter’s param- eters, like a false positive rate. This result has enormous practical significance, since the analogous result for standard Bloom filters is essentially the theoretical justification for their extensive use. 
+More generally, we have given a framework for analyzing modified Bloom filters, which we expect will be used in the future to refine the specific schemes that we analyzed in this paper. We also expect that the techniques used in this paper will be usefully applied to other data structures, as demonstrated by our modification to the Count-Min sketch (in [10]). 
