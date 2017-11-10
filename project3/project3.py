@@ -158,12 +158,12 @@ for doc in unlabeledDocuments:
 		else:
 			doc.guessedClassification = "Computing"
 
-		if(dFrequency < .0001 and cFrequenc < .0001):
+		if(dFrequency < .0001 and cFrequency < .0001):
 			doc.guessedClassification = None
 
 		print("%-35s\t%-20.6f\t%-20.6f\t%-20s\t%-20s" % (str(doc), dFrequency, cFrequency, doc.guessedClassification, doc.actualClassification))
 
-
+#Assuming Computing is the "Positive" reuslt.
 truePositives = 0;
 falsePositives = 0;
 trueNegatives = 0;
