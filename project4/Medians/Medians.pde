@@ -158,3 +158,13 @@ void draw(){
     }
 
 }
+
+
+
+void mousePressed(){
+    Random rnd = new Random();
+    colors.clear();
+	for(int i = 0; i < numberOfCentroids; i++){
+        colors.add(new Color(rnd.nextInt(255), rnd.nextInt(255), rnd.nextInt(255)));
+    }
+}
