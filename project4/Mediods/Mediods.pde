@@ -17,7 +17,7 @@ void setup(){
 	nodes = new ArrayList<Node>();
 	Node node;
 	dimensions = 2;
-	numberOfClusters = 3;
+	numberOfClusters = 6;
 	for(int i = 0; i < n; i++){
     	node = new Node(dimensions);
 		for(int j = 0; j < dimensions; j++){
@@ -52,7 +52,7 @@ void setup(){
 	
 	
 	
-	size(750, 750);
+	size(650, 450);
 
 
 
